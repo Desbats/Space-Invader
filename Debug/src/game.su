@@ -1,0 +1,14 @@
+game.c:29:6:init_enemy	16	static
+game.c:42:6:init_player	8	static
+game.c:50:6:display_enemy	24	static
+game.c:67:6:erase_enemy	16	static
+game.c:80:9:PRNG_LSFR	16	static
+game.c:93:6:shoot_enemy	16	static
+game.c:124:6:shoot	32	static
+game.c:184:9:hitbox	24	static
+game.c:247:9:ask_enemy_dead	16	static
+game.c:257:9:check_pos	24	static
+game.c:276:6:move_enemy	24	static
+game.c:302:6:move_player	16	static
+game.c:318:6:restart	8	static
+game.c:326:6:timer	16	static

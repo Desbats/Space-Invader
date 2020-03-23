@@ -1,0 +1,2 @@
+vt100.c:4:6:vt100_move	16	static
+vt100.c:18:6:vt100_clear_screen	8	static
