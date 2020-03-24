@@ -31,11 +31,13 @@ int main(void) {
 
 	/* Infinite loop */
 	while (1) {
-		signed char touch = serial_get_last_char();
-		if (touch == ' ') {
+		signed char key = serial_get_last_char();
+		if (key == ' ') {
 			shoot();
+			display_life();
+			display_score();
 		}
-		move_player(touch);
+		move_player(key);
 		shoot_enemy();
 		timer();
 	}

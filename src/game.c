@@ -17,25 +17,27 @@ typedef struct {
 t_pos_player player;
 t_pos_enemy enemy;
 
-static uint8_t compteur = 0;
-static uint8_t a = 0x5B;
+static uint8_t counter = 0;
+static uint8_t a = 0x50;
 static uint8_t x_shoot_enemy;
 static uint8_t y_shoot_enemy = 0;
 static uint8_t win = 0;
+static uint8_t score_hundred = 48;
+static uint8_t score_thousand = 48;
 
 t_pos_player *ptr_player = &player;
 t_pos_enemy *ptr_enemy = &enemy;
 
 void init_enemy(void) {
-	uint8_t colone = 0;
+	uint8_t column = 0;
 	uint8_t x;
 	win = 0;
 	for (x = 5; x < 76; x = x + 5) {
-		ptr_enemy->l1[colone][2] = 1;
-		ptr_enemy->l2[colone][2] = 1;
-		display_enemy(colone, 1, x, 3);
-		display_enemy(colone, 2, x, 6);
-		colone++;
+		ptr_enemy->l1[column][2] = 1;
+		ptr_enemy->l2[column][2] = 1;
+		display_enemy(column, 1, x, 4);
+		display_enemy(column, 2, x, 7);
+		column++;
 	}
 }
 
@@ -45,34 +47,67 @@ void init_player(void) {
 	ptr_player->life = 3;
 	vt100_move(ptr_player->x, ptr_player->y);
 	serial_puts("alo");
+	display_score();
+	display_life();
 }
 
-void display_enemy(uint8_t colone, uint8_t ligne, uint8_t x, uint8_t y) {
-	if (ask_enemy_dead(colone, ligne) == 1) {
+void display_life(void) {
+	if (ptr_player->life == 3) {
+		vt100_move(2, 2);
+		serial_puts("Life : 3");
+	} else if (ptr_player->life == 2) {
+		vt100_move(2, 2);
+		serial_puts("Life : 2");
+	} else if (ptr_player->life == 1) {
+		vt100_move(2, 2);
+		serial_puts("Life : 1");
+	} else if (ptr_player->life == 0) {
+		vt100_clear_screen();
+		vt100_move(35, 10);
+		serial_puts("GAME OVER");
+		score_hundred = 48;
+		score_thousand = 48;
+		restart();
+	}
+}
+
+void display_score(void) {
+	vt100_move(78, 2);
+	serial_puts("00");
+	vt100_move(77, 2);
+	serial_putchar(score_hundred);
+	vt100_move(76, 2);
+	serial_putchar(score_thousand);
+	vt100_move(68, 2);
+	serial_puts("Score :");
+}
+
+void display_enemy(uint8_t column, uint8_t line, uint8_t x, uint8_t y) {
+	if (ask_enemy_dead(column, line) == 1) {
 		return;
 	}
-	if (ligne == 1) {
-		ptr_enemy->l1[colone][0] = x;
-		ptr_enemy->l1[colone][1] = y;
-		vt100_move(ptr_enemy->l1[colone][0], ptr_enemy->l1[colone][1]);
+	if (line == 1) {
+		ptr_enemy->l1[column][0] = x;
+		ptr_enemy->l1[column][1] = y;
+		vt100_move(ptr_enemy->l1[column][0], ptr_enemy->l1[column][1]);
 		serial_puts("o-o");
-	} else if (ligne == 2) {
-		ptr_enemy->l2[colone][0] = x;
-		ptr_enemy->l2[colone][1] = y;
-		vt100_move(ptr_enemy->l2[colone][0], ptr_enemy->l2[colone][1]);
+	} else if (line == 2) {
+		ptr_enemy->l2[column][0] = x;
+		ptr_enemy->l2[column][1] = y;
+		vt100_move(ptr_enemy->l2[column][0], ptr_enemy->l2[column][1]);
 		serial_puts("o-o");
 	}
 }
 
-void erase_enemy(uint8_t colone, uint8_t ligne) {
-	if (ask_enemy_dead(colone, ligne) == 1) {
+void erase_enemy(uint8_t column, uint8_t line) {
+	if (ask_enemy_dead(column, line) == 1) {
 		return;
 	}
-	if (ligne == 1) {
-		vt100_move(ptr_enemy->l1[colone][0], ptr_enemy->l1[colone][1]);
+	if (line == 1) {
+		vt100_move(ptr_enemy->l1[column][0], ptr_enemy->l1[column][1]);
 		serial_puts("   ");
-	} else if (ligne == 2) {
-		vt100_move(ptr_enemy->l2[colone][0], ptr_enemy->l2[colone][1]);
+	} else if (line == 2) {
+		vt100_move(ptr_enemy->l2[column][0], ptr_enemy->l2[column][1]);
 		serial_puts("   ");
 	}
 }
@@ -92,13 +127,13 @@ uint8_t PRNG_LSFR(void) {
 
 void shoot_enemy(void) {
 	if (y_shoot_enemy == 0) {
-		uint8_t colone = PRNG_LSFR();
-		if (ask_enemy_dead(colone, 2) == 0) {
-			x_shoot_enemy = ptr_enemy->l2[colone][0] + 1;
-			y_shoot_enemy = ptr_enemy->l2[colone][1] + 1;
-		} else if (ask_enemy_dead(colone, 1) == 0) {
-			x_shoot_enemy = ptr_enemy->l1[colone][0] + 1;
-			y_shoot_enemy = ptr_enemy->l1[colone][1] + 1;
+		uint8_t column = PRNG_LSFR();
+		if (ask_enemy_dead(column, 2) == 0) {
+			x_shoot_enemy = ptr_enemy->l2[column][0] + 1;
+			y_shoot_enemy = ptr_enemy->l2[column][1] + 1;
+		} else if (ask_enemy_dead(column, 1) == 0) {
+			x_shoot_enemy = ptr_enemy->l1[column][0] + 1;
+			y_shoot_enemy = ptr_enemy->l1[column][1] + 1;
 		} else {
 			return;
 		}
@@ -128,7 +163,7 @@ void shoot(void) {
 	uint32_t i = 0;
 	uint8_t j = 0;
 	uint32_t o = 0;
-	signed char touch;
+	signed char key;
 	vt100_move(x_shoot, y_shoot - 1);
 	serial_putchar('(');
 	vt100_move(x_shoot, y_shoot - 1);
@@ -166,8 +201,8 @@ void shoot(void) {
 				shoot_enemy();
 				move_enemy();
 			}
-			touch = serial_get_last_char();
-			move_player(touch);
+			key = serial_get_last_char();
+			move_player(key);
 			k++;
 			o++;
 			if (hitbox(x_shoot, y_shoot) == 1) {
@@ -196,10 +231,13 @@ uint8_t hitbox(uint8_t x, uint8_t y) {
 						serial_puts("  x");
 						vt100_move(ptr_enemy->l1[i][0], ptr_enemy->l1[i][1]);
 						serial_puts(" x ");
+						vt100_move(ptr_enemy->l1[i][0], ptr_enemy->l1[i][1]);
+						serial_puts("100");
 					}
 					erase_enemy(i, 1);
 					ptr_enemy->l1[i][2] = 0;
-					win++;
+					score();
+					win_condition();
 					return 1;
 				}
 			}
@@ -217,10 +255,13 @@ uint8_t hitbox(uint8_t x, uint8_t y) {
 						serial_puts("  x");
 						vt100_move(ptr_enemy->l2[i][0], ptr_enemy->l2[i][1]);
 						serial_puts(" x ");
+						vt100_move(ptr_enemy->l2[i][0], ptr_enemy->l2[i][1]);
+						serial_puts("100");
 					}
 					erase_enemy(i, 2);
 					ptr_enemy->l2[i][2] = 0;
-					win++;
+					score();
+					win_condition();
 					return 1;
 				}
 			}
@@ -238,35 +279,56 @@ uint8_t hitbox(uint8_t x, uint8_t y) {
 				serial_puts("alo");
 			}
 			ptr_player->life--;
+			display_life();
 			return 1;
 		}
 	}
 	return 0;
 }
 
-uint8_t ask_enemy_dead(uint8_t colone, uint8_t ligne) {
-	if (ligne == 1 && ptr_enemy->l1[colone][2] == 0) {
+void score(void) {
+	vt100_move(78, 2);
+	serial_puts("00");
+	score_hundred++;
+	if (score_hundred == 58) {
+		score_hundred = 48;
+		score_thousand++;
+		if (score_thousand == 58) {
+			score_thousand = 48;
+		}
+	}
+	vt100_move(77, 2);
+	serial_putchar(score_hundred);
+	vt100_move(76, 2);
+	serial_putchar(score_thousand);
+	vt100_move(68, 2);
+	serial_puts("Score :");
+
+}
+
+uint8_t ask_enemy_dead(uint8_t column, uint8_t line) {
+	if (line == 1 && ptr_enemy->l1[column][2] == 0) {
 		return 1;
-	} else if (ligne == 2 && ptr_enemy->l2[colone][2] == 0) {
+	} else if (line == 2 && ptr_enemy->l2[column][2] == 0) {
 		return 1;
 	} else {
 		return 0;
 	}
 }
 
-uint8_t check_pos(uint8_t ligne, uint8_t direction) {
-	uint8_t colone;
+uint8_t check_pos(uint8_t line, uint8_t direction) {
+	uint8_t column;
 	if (direction == 0) {
-		for (colone = 14; colone > 0; colone--) {
-			if (ask_enemy_dead(colone, ligne) == 0) {
-				return colone;
+		for (column = 14; column > 0; column--) {
+			if (ask_enemy_dead(column, line) == 0) {
+				return column;
 			}
 		}
 	}
 	if (direction == 1) {
-		for (colone = 0; colone != 15; colone++) {
-			if (ask_enemy_dead(colone, ligne) == 0) {
-				return colone;
+		for (column = 0; column != 15; column++) {
+			if (ask_enemy_dead(column, line) == 0) {
+				return column;
 			}
 		}
 	}
@@ -274,28 +336,56 @@ uint8_t check_pos(uint8_t ligne, uint8_t direction) {
 }
 
 void move_enemy(void) {
-	uint8_t colone;
-	for (colone = 0; colone != 15; colone++) {
-		erase_enemy(colone, 1);
-		erase_enemy(colone, 2);
-		if (compteur == 0) {
-			ptr_enemy->l1[colone][0]++;
-			ptr_enemy->l2[colone][0]++;
-		} else if (compteur == 1) {
-			ptr_enemy->l1[colone][0]--;
-			ptr_enemy->l2[colone][0]--;
+	uint8_t column;
+	for (column = 0; column != 15; column++) {
+		erase_enemy(column, 1);
+		erase_enemy(column, 2);
+		if (counter == 0) {
+			ptr_enemy->l1[column][0]++;
+			ptr_enemy->l2[column][0]++;
+		} else if (counter == 1) {
+			ptr_enemy->l1[column][0]--;
+			ptr_enemy->l2[column][0]--;
 		}
-		display_enemy(colone, 1, ptr_enemy->l1[colone][0],
-				ptr_enemy->l1[colone][1]);
-		display_enemy(colone, 2, ptr_enemy->l2[colone][0],
-				ptr_enemy->l2[colone][1]);
+		display_enemy(column, 1, ptr_enemy->l1[column][0],
+				ptr_enemy->l1[column][1]);
+		display_enemy(column, 2, ptr_enemy->l2[column][0],
+				ptr_enemy->l2[column][1]);
 	}
 	if (ptr_enemy->l1[check_pos(1, 0)][0] == 77
 			|| ptr_enemy->l2[check_pos(2, 0)][0] == 77) {
-		compteur++;
+		for (column = 0; column != 15; column++) {
+			erase_enemy(column, 1);
+			erase_enemy(column, 2);
+			ptr_enemy->l1[column][1]++;
+			ptr_enemy->l2[column][1]++;
+			display_enemy(column, 1, ptr_enemy->l1[column][0],
+					ptr_enemy->l1[column][1]);
+			display_enemy(column, 2, ptr_enemy->l2[column][0],
+					ptr_enemy->l2[column][1]);
+		}
+		counter++;
 	} else if (ptr_enemy->l1[check_pos(1, 1)][0] == 2
 			|| ptr_enemy->l2[check_pos(2, 1)][0] == 2) {
-		compteur--;
+		for (column = 0; column != 15; column++) {
+			erase_enemy(column, 1);
+			erase_enemy(column, 2);
+			ptr_enemy->l1[column][1]++;
+			ptr_enemy->l2[column][1]++;
+			display_enemy(column, 1, ptr_enemy->l1[column][0],
+					ptr_enemy->l1[column][1]);
+			display_enemy(column, 2, ptr_enemy->l2[column][0],
+					ptr_enemy->l2[column][1]);
+		}
+		counter--;
+	}
+	if (ptr_enemy->l2[0][1] == ptr_player->y) {
+		vt100_clear_screen();
+		vt100_move(35, 10);
+		serial_puts("GAME OVER");
+		score_hundred = 48;
+		score_thousand = 48;
+		restart();
 	}
 }
 
@@ -315,45 +405,38 @@ void move_player(signed char sens) {
 		serial_puts("alo");
 	}
 }
+
+void win_condition(void) {
+	win++;
+	if (win == 30) {
+		vt100_clear_screen();
+		vt100_move(35, 10);
+		serial_puts("YOU WIN !");
+		restart();
+	}
+}
+
 void restart(void) {
-	vt100_move(33, 15);
+	vt100_move(28, 15);
 	serial_puts("Press space for restart");
 	game_launch();
 	init_player();
 	init_enemy();
 
 }
+
 void timer(void) {
-	signed char touch;
+	signed char key;
 	uint32_t i;
 	for (i = 0; i < 0xFFF30; i++) {
-		touch = serial_get_last_char();
-		move_player(touch);
-		if (touch == ' ') {
+		key = serial_get_last_char();
+		move_player(key);
+		if (key == ' ') {
 			shoot();
+			display_life();
+			display_score();
 			return;
 		}
-	}
-	if (ptr_player->life == 3) {
-		vt100_move(2, 2);
-		serial_puts("Life : 3");
-	} else if (ptr_player->life == 2) {
-		vt100_move(2, 2);
-		serial_puts("Life : 2");
-	} else if (ptr_player->life == 1) {
-		vt100_move(2, 2);
-		serial_puts("Life : 1");
-	} else if (ptr_player->life == 0) {
-		vt100_clear_screen();
-		vt100_move(33, 10);
-		serial_puts("GAME OVER");
-		restart();
-	}
-	if (win == 30) {
-		vt100_clear_screen();
-		vt100_move(33, 10);
-		serial_puts("YOU WIN !");
-		restart();
 	}
 	move_enemy();
 }
