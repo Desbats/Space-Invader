@@ -1,1 +1,3 @@
-# Space-Invader
+# Space-Invaders
+
+Press space for start playing
